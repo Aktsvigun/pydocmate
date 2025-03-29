@@ -1,0 +1,210 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--g-color-base-background);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--g-spacing-4) var(--g-spacing-4) var(--g-spacing-8);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@media (min-width: 680px) {
+  .main {
+    padding: var(--g-spacing-4) var(--g-spacing-6) var(--g-spacing-8);
+  }
+}
+
+@media (min-width: 1024px) {
+  .main {
+    padding: var(--g-spacing-4) var(--g-spacing-14) var(--g-spacing-8);
+  }
+}
+
+.title {
+  margin-top: var(--g-spacing-10);
+  text-align: center;
+  background-color: var(--g-color-base-generic);
+  border: 1px solid var(--g-color-line-generic);
+  border-radius: var(--g-border-radius-m);
+  padding: var(--g-spacing-4);
+  max-width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.controls {
+  margin-top: var(--g-spacing-4);
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+}
+
+.checkboxes {
+  margin-top: var(--g-spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-2);
+}
+
+/* Styling for Nebius switches - with increased specificity */
+.nebiusSwitch :global(.g-switch__control_checked),
+.nebiusSwitch :global(.g-switch__control_checked),
+html .nebiusSwitch :global(.g-switch__control_checked),
+body .nebiusSwitch :global(.g-switch__control_checked) {
+  background-color: #027bf3 !important; /* Nebius blue color */
+  border-color: #027bf3 !important;
+}
+
+.nebiusSwitch:hover :global(.g-switch__control_checked),
+html .nebiusSwitch:hover :global(.g-switch__control_checked),
+body .nebiusSwitch:hover :global(.g-switch__control_checked) {
+  background-color: #0165cc !important; /* Darker blue on hover */
+  border-color: #0165cc !important;
+}
+
+/* Additional important styling for the toggle */
+.nebiusSwitch :global(.g-switch__toggle_checked),
+html .nebiusSwitch :global(.g-switch__toggle_checked),
+body .nebiusSwitch :global(.g-switch__toggle_checked) {
+  background-color: white !important;
+}
+
+/* Additional styling to ensure switches fully match Nebius design */
+.nebiusSwitch :global(.g-switch__box) {
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* Styling for the track in both unchecked and checked states */
+.nebiusSwitch :global(.g-switch__control) {
+  border-color: #c9cbd0 !important; /* Light gray border for unchecked */
+  background-color: #f2f2f3 !important; /* Light gray background for unchecked */
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.nebiusSwitch :global(.g-switch__control_checked),
+html .nebiusSwitch :global(.g-switch__control_checked),
+body .nebiusSwitch :global(.g-switch__control_checked) {
+  border-color: #027bf3 !important; /* Nebius blue border for checked */
+  background-color: #027bf3 !important; /* Nebius blue background for checked */
+}
+
+/* Target any overlays or pseudo-elements */
+.nebiusSwitch :global(.g-switch__control_checked::after),
+.nebiusSwitch :global(.g-switch__control_checked::before),
+html .nebiusSwitch :global(.g-switch__control_checked::after),
+html .nebiusSwitch :global(.g-switch__control_checked::before) {
+  background-color: #027bf3 !important;
+}
+
+/* Styling for the toggle/knob */
+.nebiusSwitch :global(.g-switch__toggle) {
+  background-color: white !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Override any in-progress transitions */
+.nebiusSwitch :global(.g-switch__control.g-switch__control_progress),
+html .nebiusSwitch :global(.g-switch__control.g-switch__control_progress) {
+  background-color: rgba(2, 123, 243, 0.5) !important; /* Lighter Nebius blue for in-progress */
+}
+
+/* Target the focus state as well */
+.nebiusSwitch :global(.g-switch__box:focus-within .g-switch__control_checked),
+html .nebiusSwitch :global(.g-switch__box:focus-within .g-switch__control_checked) {
+  background-color: #027bf3 !important;
+  border-color: #027bf3 !important;
+}
+
+/* Catch-all for any other elements that might be causing the orange color */
+.nebiusSwitch :global(*[class*="checked"]),
+html .nebiusSwitch :global(*[class*="checked"]) {
+  background-color: #027bf3 !important;
+  border-color: #027bf3 !important;
+}
+
+/* Dark theme specific overrides if needed */
+[data-theme='dark'] .nebiusSwitch :global(.g-switch__control) {
+  border-color: #3d3e41 !important; /* Darker gray border for unchecked in dark mode */
+  background-color: #2c2d2e !important; /* Darker gray background for unchecked in dark mode */
+}
+
+[data-theme='dark'] .nebiusSwitch :global(.g-switch__control_checked),
+[data-theme='dark'] html .nebiusSwitch :global(.g-switch__control_checked) {
+  background-color: #027bf3 !important;
+  border-color: #027bf3 !important;
+}
+
+[data-theme='dark'] .nebiusSwitch :global(*[class*="checked"]) {
+  background-color: #027bf3 !important;
+  border-color: #027bf3 !important;
+}
+
+.codeBlocks {
+  margin-top: var(--g-spacing-8);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-8);
+}
+
+@media (min-width: 768px) {
+  .codeBlocks {
+    flex-direction: row;
+  }
+  
+  .codeBlock {
+    flex-basis: 50%;
+    max-width: calc(50% - var(--g-spacing-4));
+  }
+}
+
+.codeBlock {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-4);
+}
+
+.codeBlockTitle {
+  text-align: center;
+}
+
+/* Add this to your Home.module.css file */
+.nebiusCheckbox :global(.g-checkbox__icon.g-checkbox__icon_checked) {
+  background-color: #027bf3 !important; /* Nebius blue color */
+  border-color: #027bf3 !important;
+}
+
+.nebiusCheckbox:hover :global(.g-checkbox__icon.g-checkbox__icon_checked) {
+  background-color: #0165cc !important; /* Darker blue on hover */
+  border-color: #0165cc !important;
+}
+
+.nebiusCheckbox :global(.g-checkbox__icon:focus-within) {
+  border-color: #027bf3 !important;
+  box-shadow: 0 0 0 2px rgba(2, 123, 243, 0.3) !important;
+}
+
+.nebiusCheckbox :global(.g-checkbox__icon.g-checkbox__icon_checked svg path) {
+  fill: white !important;
+}
+
+.nebiusCheckbox :global(.g-checkbox__icon.g-checkbox__icon_indeterminate) {
+  background-color: #027bf3 !important;
+  border-color: #027bf3 !important;
+}
+
+/* Dark theme specific overrides if needed */
+[data-theme='dark'] .nebiusCheckbox :global(.g-checkbox__icon.g-checkbox__icon_checked) {
+  background-color: #027bf3 !important;
+  border-color: #027bf3 !important;
+} 

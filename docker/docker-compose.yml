@@ -1,0 +1,48 @@
+version: '3'
+
+services:
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/frontend/Dockerfile
+    container_name: pydocass-frontend
+    hostname: frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_BACKEND_URL=http://172.20.0.2:4000
+      - BACKEND_URL=http://172.20.0.2:4000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      pydocass-network:
+        ipv4_address: 172.20.0.3
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/backend/Dockerfile
+    container_name: pydocass-backend
+    hostname: backend
+    ports:
+      - "4000:4000"
+    volumes:
+      - ../backend:/app
+    env_file:
+      - ../.env
+    restart: unless-stopped
+    networks:
+      pydocass-network:
+        ipv4_address: 172.20.0.2
+
+networks:
+  pydocass-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

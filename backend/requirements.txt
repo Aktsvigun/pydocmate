@@ -1,0 +1,13 @@
+openai==1.58.1
+PyMuPDF==1.24.11
+pdfplumber==0.11.4
+requests==2.32.3
+sqlalchemy==2.0.36
+streamlit==1.39.0
+transformers==4.50.0
+psycopg2-binary==2.9.10
+flask==3.1.0
+flask-cors==5.0.1
+black==25.1.0
+anthropic==0.49.0
+instructor==1.7.7

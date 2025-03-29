@@ -1,0 +1,162 @@
+@import '@gravity-ui/uikit/styles/styles.css';
+
+:root {
+  /* Background colors */
+  --g-color-base-background: #ffffff;
+  --g-color-base-generic: #ffffff;
+  --g-color-base-main-menu-background: #1a1a1a;
+  --g-color-line-generic: #e5e5e5;
+  
+  /* Text colors - Light theme */
+  --g-color-text-primary: #000000;
+  --g-color-text-complementary: #666666;
+  --g-color-text-secondary: #666666;
+  
+  /* Text colors - Dark theme (for dark elements like header) */
+  --g-color-text-light-primary: #ffffff;
+  --g-color-text-light-complementary: #a0a0a0;
+  
+  /* Typography */
+  --g-text-header-1-font-size: 24px;
+  --g-text-header-1-line-height: 32px;
+  --g-text-body-2-font-size: 14px;
+  --g-text-body-2-line-height: 20px;
+  --g-text-body-3-font-size: 14px;
+  --g-text-body-3-line-height: 20px;
+  
+  /* Spacing and borders */
+  --g-border-radius-m: 8px;
+  --g-spacing-1: 4px;
+  --g-spacing-2: 8px;
+  --g-spacing-4: 16px;
+  --g-spacing-6: 24px;
+  --g-spacing-8: 32px;
+  --g-spacing-10: 40px;
+  --g-spacing-14: 56px;
+  
+  /* Override Switch component colors */
+  --g-switch-checked-color: #027bf3;
+  --g-switch-checked-background: #027bf3;
+  --g-switch-checked-border: #027bf3;
+  --g-color-base-brand: #027bf3;
+  --g-color-base-selection: #027bf3;
+  --g-color-line-brand: #027bf3;
+}
+
+[data-theme='dark'] {
+  --g-color-base-background: #1a1a1a;
+  --g-color-base-generic: #1a1a1a;
+  --g-color-base-main-menu-background: #000000;
+  --g-color-line-generic: #333333;
+  --g-color-text-primary: #ffffff;
+  --g-color-text-complementary: #a0a0a0;
+  --g-color-text-secondary: #a0a0a0;
+  --g-color-text-light-primary: #ffffff;
+  --g-color-text-light-complementary: #a0a0a0;
+  
+  /* Override Switch component colors for dark theme */
+  --g-switch-checked-color: #027bf3;
+  --g-switch-checked-background: #027bf3;
+  --g-switch-checked-border: #027bf3;
+  --g-color-base-brand: #027bf3;
+  --g-color-base-selection: #027bf3;
+  --g-color-line-brand: #027bf3;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: var(--g-color-base-background);
+  color: var(--g-color-text-primary);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Global overrides for Switch component */
+.g-switch__control_checked,
+.g-switch__control.g-switch__control_checked,
+*[class*="g-switch__control"][class*="checked"] {
+  background-color: #027bf3 !important;
+  border-color: #027bf3 !important;
+}
+
+.g-switch__control.g-switch__control_checked:hover,
+.g-switch__control_checked:hover,
+*[class*="g-switch__control"][class*="checked"]:hover {
+  background-color: #0165cc !important;
+  border-color: #0165cc !important;
+}
+
+/* Target elements with orange/yellow background in switches */
+[class*="g-switch"] [style*="background-color"]:not([style*="rgb(2, 123, 243)"]),
+[class*="g-switch"] [style*="background"]:not([style*="rgb(2, 123, 243)"]) {
+  background-color: #027bf3 !important;
+  border-color: #027bf3 !important;
+}
+
+/* Target any SVG elements within switches that might have fill colors */
+[class*="g-switch"] svg [fill="#ffcc00"],
+[class*="g-switch"] svg [fill="orange"],
+[class*="g-switch"] svg [fill="yellow"] {
+  fill: #027bf3 !important;
+}
+
+/* Very important - override any inline styles that might be setting orange colors */
+[class*="g-switch"] * {
+  --switch-checked-color: #027bf3 !important;
+  --switch-checked-background: #027bf3 !important; 
+}
+
+/* Override specifically the track color in checked state */
+.g-switch input:checked ~ .g-switch__control,
+.g-switch input:checked + .g-switch__control {
+  background-color: #027bf3 !important;
+  border-color: #027bf3 !important;
+}
+
+/* Override checkbox colors with increased specificity */
+.g-checkbox__icon.g-checkbox__icon_checked {
+  background-color: #027bf3 !important;
+  border-color: #027bf3 !important;
+}
+
+.g-checkbox__icon.g-checkbox__icon_checked:hover {
+  background-color: #0165cc !important;
+  border-color: #0165cc !important;
+}
+
+/* Override checkbox focus state with increased specificity */
+.g-checkbox__icon:focus-within {
+  border-color: #027bf3 !important;
+  box-shadow: 0 0 0 2px rgba(2, 123, 243, 0.3) !important;
+}
+
+/* Override any SVG elements within checkboxes that might have fill colors with increased specificity */
+.g-checkbox__icon.g-checkbox__icon_checked svg path,
+.g-checkbox svg [fill="#ffcc00"],
+.g-checkbox svg [fill="orange"],
+.g-checkbox svg [fill="yellow"] {
+  fill: white !important;
+}
+
+/* Override for indeterminate state with increased specificity */
+.g-checkbox__icon.g-checkbox__icon_indeterminate {
+  background-color: #027bf3 !important;
+  border-color: #027bf3 !important;
+}
+
+/* Catch-all for any other elements that might be causing the orange color with increased specificity */
+.g-checkbox * {
+  --checkbox-checked-color: #027bf3 !important;
+  --checkbox-checked-background: #027bf3 !important;
+}
