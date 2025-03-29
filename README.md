@@ -1,8 +1,8 @@
-# PyDocAss - Python Documentation Assistant
+# PyDocMate - Python Documentation Assistant
 
 This repository contains a web application that helps developers document Python code with the assistance of AI.
 
-![PyDoc Assistant](./frontend/public/screenshot.png)
+![PyDoc Assistant](./public/screenshot.png)
 
 ## Project Structure
 
