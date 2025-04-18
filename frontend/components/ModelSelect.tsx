@@ -1,8 +1,8 @@
 // ./components/ModelSelect.tsx
 
 import { NebiusModel } from '@/types/types';
-import { FC } from 'react';
-import { Select, SelectOption, SelectOptionGroup } from '@gravity-ui/uikit';
+import { FC, Fragment } from 'react';
+import { Select, SelectOption } from '@gravity-ui/uikit';
 
 interface Props {
   model: NebiusModel;
@@ -10,24 +10,19 @@ interface Props {
 }
 
 export const ModelSelect: FC<Props> = ({ model, onChange }) => {
-  const options: (SelectOption | SelectOptionGroup)[] = [
-    {
-      label: 'Fast Models',
-      options: [
-        { value: 'Qwen/Qwen2.5-Coder-32B-Instruct-fast', content: 'Qwen2.5-Coder-32B-Instruct-fast' },
-        { value: 'Qwen/QwQ-32B-fast', content: 'QwQ-32B-fast' },
-        { value: 'meta-llama/Llama-3.3-70B-Instruct-fast', content: 'Llama-3.3-70B-Instruct-fast' },
-      ],
+  const options: SelectOption[] = [
+    { 
+      value: 'Default (DeepSeek-V3 + Qwen2.5-Coder-32B)', 
+      content: (
+        <Fragment>
+          <strong>Default (DeepSeek-V3 + Qwen2.5-Coder-32B)</strong>
+        </Fragment>
+      ) 
     },
-    {
-      label: 'Normal Models',
-      options: [
-        { value: 'deepseek-ai/DeepSeek-V3', content: 'DeepSeek-V3' },
-        { value: 'Qwen/Qwen2.5-Coder-32B-Instruct', content: 'Qwen2.5-Coder-32B-Instruct' },
-        { value: 'Qwen/QwQ-32B', content: 'QwQ-32B' },
-        { value: 'meta-llama/Llama-3.3-70B-Instruct', content: 'Llama-3.3-70B-Instruct' },
-      ],
-    },
+    { value: 'deepseek-ai/DeepSeek-V3-0324-fast', content: 'DeepSeek-V3-0324' },
+    { value: 'Qwen/Qwen2.5-Coder-32B-Instruct-fast', content: 'Qwen2.5-Coder-32B' },
+    { value: 'Qwen/QwQ-32B-fast', content: 'QwQ-32B' },
+    { value: 'meta-llama/Llama-3.3-70B-Instruct-fast', content: 'Llama-3.3-70B' },
   ];
 
   return (

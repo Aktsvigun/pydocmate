@@ -1,4 +1,4 @@
-export type NebiusModel = 'Qwen/Qwen2.5-Coder-32B-Instruct-fast' | 'deepseek-ai/DeepSeek-V3' | 'Qwen/QwQ-32B-fast' | 'meta-llama/Llama-3.3-70B-Instruct-fast' | 'Qwen/Qwen2.5-Coder-32B-Instruct' | 'Qwen/QwQ-32B' | 'meta-llama/Llama-3.3-70B-Instruct';
+export type NebiusModel = 'Qwen/Qwen2.5-Coder-32B-Instruct-fast' | 'deepseek-ai/DeepSeek-V3-0324-fast' | 'Qwen/QwQ-32B-fast' | 'meta-llama/Llama-3.3-70B-Instruct-fast' | 'Default (DeepSeek-V3 + Qwen2.5-Coder-32B)';
 
 export interface CodeBody {
   inputCode: string;

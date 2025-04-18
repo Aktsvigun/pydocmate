@@ -19,7 +19,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Try both hostname and IP to ensure connectivity
     const backendUrl = process.env.NODE_ENV === 'production' 
       ? 'http://backend:4000' 
-      : 'http://172.20.0.2:4000';
+      : 'http://172.17.0.3:4000';
     
     console.log(`Connecting to backend at: ${backendUrl}`);
     

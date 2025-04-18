@@ -17,7 +17,7 @@ export default function Home() {
 
   // Model selection
   const [model, setModel] = useState<NebiusModel>(
-    'deepseek-ai/DeepSeek-V3',
+    'Default (DeepSeek-V3 + Qwen2.5-Coder-32B)',
   );
 
   // Four booleans
@@ -54,10 +54,15 @@ export default function Home() {
     setOutputCode('');
 
     try {
+      // Transform model name if it's the default
+      const actualModel = model === 'Default (DeepSeek-V3 + Qwen2.5-Coder-32B)' 
+        ? 'deepseek-ai/DeepSeek-V3-0324-fast' 
+        : model;
+        
       // Prepare request body
       const body: CodeBody = {
         inputCode,
-        model,
+        model: actualModel,
         modifyExistingDocumentation,
         doWriteArgumentsAnnotations,
         doWriteDocstrings,
