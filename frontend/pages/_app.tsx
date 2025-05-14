@@ -31,9 +31,13 @@ function ThemedApp({ Component, pageProps }: AppProps<{}>) {
 
   // If not mounted yet, use a generic fallback or return null
   if (!mounted) {
+    // Return a generic placeholder without GravityThemeProvider
+    // to avoid server-side useLayoutEffect issues.
+    // This might cause a flash of unstyled content (FOUC) for Gravity components,
+    // but should help prevent the hydration mismatch warning and potential reloads.
     return (
       <main className={inter.className}>
-        <div style={{ visibility: 'hidden' }}>Loading theme...</div>
+        <div style={{ visibility: 'hidden' }}>Loading...</div>
       </main>
     );
   }
