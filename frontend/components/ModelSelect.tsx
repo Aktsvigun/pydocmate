@@ -20,9 +20,9 @@ export const ModelSelect: FC<Props> = ({ model, onChange }) => {
       ) 
     },
     { value: 'deepseek-ai/DeepSeek-V3-0324-fast', content: 'DeepSeek-V3-0324' },
+    { value: 'Qwen/Qwen3-235B-A22B', content: 'Qwen3-235B-A22B' },
+    { value: 'Qwen/Qwen3-30B-A3B-fast', content: 'Qwen3-30B-A3B' },
     { value: 'Qwen/Qwen2.5-Coder-32B-Instruct-fast', content: 'Qwen2.5-Coder-32B' },
-    { value: 'Qwen/QwQ-32B-fast', content: 'QwQ-32B' },
-    { value: 'meta-llama/Llama-3.3-70B-Instruct-fast', content: 'Llama-3.3-70B' },
   ];
 
   return (
