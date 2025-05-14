@@ -1,11 +1,21 @@
 import { Button, ThemeProvider, useLayoutContext } from "@gravity-ui/uikit";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from 'react';
 
 import styles from "./Header.module.css";
 
 export const Header = () => {
   const { isMediaActive } = useLayoutContext();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <ThemeProvider theme="dark" scoped rootClassName={styles.root}>

@@ -12,20 +12,13 @@ configure({
   lang: 'en',
 });
 
-// Helper for safe useEffect/useLayoutEffect in SSR
-const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? 
-  // Client-side: Use useLayoutEffect
-  useEffect : 
-  // Server-side: Use useEffect (which is a no-op on server)
-  useEffect;
-
 function ThemedApp({ Component, pageProps }: AppProps<{}>) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [gravityTheme, setGravityTheme] = useState<'light' | 'dark'>('light');
 
   // Only update the theme after mounting to avoid hydration mismatch
-  useIsomorphicLayoutEffect(() => {
+  useEffect(() => {
     setMounted(true);
   }, []);
 
@@ -36,14 +29,12 @@ function ThemedApp({ Component, pageProps }: AppProps<{}>) {
     }
   }, [resolvedTheme, mounted]);
 
-  // If not mounted yet, use a generic fallback with no dynamic content
+  // If not mounted yet, use a generic fallback or return null
   if (!mounted) {
     return (
-      <GravityThemeProvider theme="light">
-        <main className={inter.className}>
-          <div style={{ visibility: 'hidden' }}>Loading...</div>
-        </main>
-      </GravityThemeProvider>
+      <main className={inter.className}>
+        <div style={{ visibility: 'hidden' }}>Loading theme...</div>
+      </main>
     );
   }
 
