@@ -5,6 +5,8 @@ import logging
 from .database import structures, get_db
 
 log = logging.getLogger(__name__)
+
+
 def submit_record(
     table: Literal["responses", "feedback", "inputs"],
     retries: int = 3,
@@ -21,6 +23,7 @@ def submit_record(
                 db.add(record)
                 db.commit()
                 db.refresh(record)
+                return
         except OperationalError:
             if attempt < retries - 1:
                 time.sleep(delay)
