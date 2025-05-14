@@ -5,12 +5,15 @@ import { useEffect, useState } from "react";
 
 import styles from "./ThemeSwitcher.module.css";
 
+// Helper for safe useEffect/useLayoutEffect in SSR
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useEffect : useEffect;
+
 export const ThemeSwitcher = () => {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   // When mounted on client, use the theme from next-themes
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     setMounted(true);
     console.log("ThemeSwitcher mounted, current theme:", theme, "resolved theme:", resolvedTheme);
   }, [theme, resolvedTheme]);
