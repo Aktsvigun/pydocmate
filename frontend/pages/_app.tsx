@@ -3,9 +3,12 @@ import { ThemeProvider, useTheme } from 'next-themes';
 import "../styles/globals.css";
 import type { AppProps } from "next/app";
 import { Inter } from "next/font/google";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useLayoutEffect } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
+
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 // Configure Gravity UI
 configure({
@@ -31,14 +34,12 @@ function ThemedApp({ Component, pageProps }: AppProps<{}>) {
 
   // If not mounted yet, use a generic fallback or return null
   if (!mounted) {
-    // Return a generic placeholder without GravityThemeProvider
-    // to avoid server-side useLayoutEffect issues.
-    // This might cause a flash of unstyled content (FOUC) for Gravity components,
-    // but should help prevent the hydration mismatch warning and potential reloads.
     return (
-      <main className={inter.className}>
-        <div style={{ visibility: 'hidden' }}>Loading...</div>
-      </main>
+      <GravityThemeProvider theme="light">
+        <main className={inter.className}>
+          <div style={{ visibility: 'hidden' }}>Loading...</div>
+        </main>
+      </GravityThemeProvider>
     );
   }
 
