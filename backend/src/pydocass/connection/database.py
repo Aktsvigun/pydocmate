@@ -25,6 +25,8 @@ else:
 Base = declarative_base()
 
 log = logging.getLogger(__name__)
+
+
 @contextmanager
 def get_db():
     if SessionLocal is None:

@@ -1,1 +1,1 @@
-"""Tests for the pydocass components.""" 
+"""Tests for the pydocass components."""

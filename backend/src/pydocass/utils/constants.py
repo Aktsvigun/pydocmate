@@ -1,12 +1,12 @@
 import os
 
-DEFAULT_MODEL_CHECKPOINT = "deepseek-ai/DeepSeek-V3"  #"Qwen/Qwen2.5-Coder-32B-Instruct-fast"
-LONG_CONTEXT_MODEL_CHECKPOINT = "deepseek-ai/DeepSeek-V3"  #"meta-llama/Llama-3.3-70B-Instruct-fast"
-DEFAULT_TOKENIZER_CHECKPOINT = "deepseek-ai/DeepSeek-V3"  #"Qwen/Qwen2.5-Coder-32B-Instruct"
+DEFAULT_MODEL_CHECKPOINT = "Qwen/Qwen3-30B-A3B-fast"
+LONG_CONTEXT_MODEL_CHECKPOINT = "deepseek-ai/DeepSeek-V3-0324-fast"
+DEFAULT_TOKENIZER_CHECKPOINT = "Qwen/Qwen3-30B-A3B"
 
-MAX_TOTAL_TOKENS = 64_000
+MAX_TOTAL_TOKENS = 40_000
 MAX_TOKENS_FOR_LONG_CONTEXT = 8_192
-MAX_MAX_TOTAL_TOKENS = 16_384
+MAX_MAX_TOKENS = 16_384
 
 NUM_SYSTEM_PROMPT_TOKENS_DICT = {
     "annotations": 12756,
@@ -27,3 +27,7 @@ BASE_URL = (
     or os.getenv("OPENAI_BASE_URL")
     or "https://api.studio.nebius.ai/v1"
 )
+
+ANNOTATION_MAX_NUM_NODES_PER_MODEL = 100
+
+FORBIDDEN_ARG_NAMES_IN_ANNOTATION = ["self", "cls", "model_config"]

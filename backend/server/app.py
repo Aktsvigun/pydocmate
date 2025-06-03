@@ -41,6 +41,7 @@ def document_code():
             do_write_arguments_annotation=data["do_write_arguments_annotations"],
             do_write_docstrings=data["do_write_docstrings"],
             do_write_comments=data["do_write_comments"],
+            annotate_with_any=data["annotate_with_any"],
             in_time=in_time,
             model_checkpoint=data["model_checkpoint"],
             use_streaming=USE_STREAMING,

@@ -14,10 +14,11 @@ from ..utils.prompts import (
 )
 from ..utils.utils import (
     get_valid_json_if_possible,
-    get_model_checkpoint_max_tokens,
+    get_model_checkpoint_and_params,
     extract_llm_response_data,
 )
 from ..utils.constants import DEFAULT_TOP_P_DOCSTRINGS, DEFAULT_MODEL_CHECKPOINT
+
 
 def write_docstrings(
     target_nodes_dict: dict[
@@ -47,17 +48,15 @@ def write_docstrings(
     user_prompt = str(USER_PROMPT).format(
         code=code, json_schema=pydantic_model.model_json_schema()
     )
-    model_checkpoint, max_tokens, use_extended_prompt = (
-        get_model_checkpoint_max_tokens(
-            user_prompt=user_prompt,
-            tokenizer=tokenizer,
-            task="docstrings",
-            model_checkpoint=model_checkpoint,
-        )
+    model_checkpoint, max_tokens, use_extended_prompt = get_model_checkpoint_and_params(
+        user_prompt=user_prompt,
+        tokenizer=tokenizer,
+        task="docstrings",
+        model_checkpoint=model_checkpoint,
     )
     messages = _create_messages(use_extended_prompt)
     messages += [{"role": "user", "content": user_prompt}]
-    
+
     # Choose between streaming and non-streaming based on user preference
     if use_streaming:
         yield from _process_streaming_docstrings(
@@ -184,17 +183,17 @@ def _process_non_streaming_docstrings(
         # If we couldn't parse the JSON, yield the original code
         yield code
         return
-    
+
     lines_shift = 0
-    
+
     # Process all docstrings at once
     for key, value in docstrings_data.items():
         if not value:
             continue
-            
+
         # Get the function or class to add the docstring to
         func = _get_function_by_key(key, target_nodes_dict)
-        
+
         # Format the docstring with proper line breaks and tabs
         value = (
             value.replace("\\\\n", "\n")
@@ -202,20 +201,20 @@ def _process_non_streaming_docstrings(
             .replace("\\n", "\n")
             .replace("\\t", "\t")
         )
-        
+
         num_tabs_to_use = (
             code.splitlines()[func.lineno + lines_shift - 1]
             .replace(" " * 4, "\t")
             .count("\t")
             + 1
         )
-        
+
         joiner = "\n" + "\t" * num_tabs_to_use
         value = "".join(joiner + x for x in value.split("\n"))
-        
+
         # Store the old code to calculate the line difference
         old_code = code
-        
+
         # Update the code with the new docstring
         code = _update_code_with_node_docstring(
             generated_docstring=value,
@@ -224,18 +223,17 @@ def _process_non_streaming_docstrings(
             lines_shift=lines_shift,
             num_tabs_to_use=num_tabs_to_use,
         )
-        
+
         # Update the line shift for the next docstring
         lines_shift += len(code.splitlines()) - len(old_code.splitlines())
-    
+
     # Create response data from the usage info
-    response_data = {
-        "model": model_checkpoint,
-        "output": response.model_dump_json()
-    }
-    
+    response_data = {"model": model_checkpoint, "output": response.model_dump_json()}
+
     # Current work-around to handle Anthropic limits
-    import time; time.sleep(60)
+    import time
+
+    time.sleep(60)
     # Yield the final code with all docstrings added
     yield code, response_data
 

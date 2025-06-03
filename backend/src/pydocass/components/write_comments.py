@@ -10,10 +10,11 @@ from ..utils.prompts import (
 )
 from ..utils.utils import (
     get_valid_json_if_possible,
-    get_model_checkpoint_max_tokens,
+    get_model_checkpoint_and_params,
     extract_llm_response_data,
 )
 from ..utils.constants import DEFAULT_TOP_P_COMMENTS, DEFAULT_MODEL_CHECKPOINT
+
 
 def write_comments(
     code: str,
@@ -37,7 +38,7 @@ def write_comments(
         for key, value in schema.items()
     }
     user_prompt = str(USER_PROMPT).format(code=code, json_schema=json.dumps(schema))
-    model_checkpoint, max_tokens = get_model_checkpoint_max_tokens(
+    model_checkpoint, max_tokens = get_model_checkpoint_and_params(
         user_prompt=user_prompt,
         tokenizer=tokenizer,
         task="comments",
@@ -105,9 +106,7 @@ def _process_streaming_comments(
                 output_length += len(chunk.delta)
                 # Check that a new key has been processed
                 for end_pos in range(output_length, boundary, -1):
-                    if valid_dict := get_valid_json_if_possible(
-                        output[:end_pos] + "}"
-                    ):
+                    if valid_dict := get_valid_json_if_possible(output[:end_pos] + "}"):
                         for key, value in valid_dict.items():
                             # TODO: optimize here
                             if not key in finished_keys:
@@ -190,34 +189,38 @@ def _process_non_streaming_comments(
         response_model=pydantic_model,
     )
     comments_data = response.dict()
-    
+
     if not comments_data:
         # If we couldn't parse the JSON, yield the original code
         yield code
         return
-    
+
     id_line_in_splitlines = -1
-    
+
     # Process all comments at once
     for key, value in comments_data.items():
         if key not in lines_dict:
             continue
-            
+
         # Get the line to add the comment to
         line = lines_dict[key]
-        
+
         if value or ("default" in schema[key] and modify_existing_documentation):
             # Find the location of comments for this line
-            ids_comment_lines, line_has_inline_comment, id_line_in_splitlines = _find_ids_comments_for_line(
-                line=line,
-                splitlines=splitlines,
-                next_line_index_in_code=id_line_in_splitlines + 1,
+            ids_comment_lines, line_has_inline_comment, id_line_in_splitlines = (
+                _find_ids_comments_for_line(
+                    line=line,
+                    splitlines=splitlines,
+                    next_line_index_in_code=id_line_in_splitlines + 1,
+                )
             )
-            
+
             # If existing comments should not be modified, continue
-            if (len(ids_comment_lines) > 0 or line_has_inline_comment) and not modify_existing_documentation:
+            if (
+                len(ids_comment_lines) > 0 or line_has_inline_comment
+            ) and not modify_existing_documentation:
                 continue
-                
+
             # Insert comment to the code
             splitlines, id_line_in_splitlines = _update_line_comment_in_code(
                 new_value=value,
@@ -229,18 +232,17 @@ def _process_non_streaming_comments(
             )
         else:
             id_line_in_splitlines = splitlines.index(line, id_line_in_splitlines + 1)
-    
+
     # Generate the final code with all comments
     code = _restore_code_from_numerated_lines(splitlines)
-    
+
     # Create response data from the usage info
-    response_data = {
-        "model": model_checkpoint,
-        "output": response.model_dump_json()
-    }
-    
+    response_data = {"model": model_checkpoint, "output": response.model_dump_json()}
+
     # Current work-around to handle Anthropic limits
-    import time; time.sleep(60)
+    import time
+
+    time.sleep(60)
     # Yield the final code with all comments added
     yield code, response_data
 

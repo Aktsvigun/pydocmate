@@ -1,6 +1,6 @@
 import ast
 import typing
-from typing import Union
+from typing import Union, Optional
 from openai import Client
 from pydantic import create_model, Field, BaseModel
 from transformers import PreTrainedTokenizerFast
@@ -12,10 +12,15 @@ from ..utils.prompts import (
 )
 from ..utils.utils import (
     get_valid_json_if_possible,
-    get_model_checkpoint_max_tokens,
+    get_model_checkpoint_and_params,
     extract_llm_response_data,
 )
-from ..utils.constants import DEFAULT_TOP_P_ANNOTATIONS, DEFAULT_MODEL_CHECKPOINT
+from ..utils.constants import (
+    DEFAULT_TOP_P_ANNOTATIONS,
+    DEFAULT_MODEL_CHECKPOINT,
+    ANNOTATION_MAX_NUM_NODES_PER_MODEL,
+    FORBIDDEN_ARG_NAMES_IN_ANNOTATION,
+)
 from .write_docstrings import get_docstring_position_for_node_with_no_docstring
 
 
@@ -27,7 +32,7 @@ POSSIBLE_RETURNS_ANNOTATION_TYPES = (
     ast.Subscript,
     ast.Attribute,
     ast.BinOp,
-    ast.Tuple
+    ast.Tuple,
 )
 
 RETURNS_ARGUMENT_NAME_OPTIONS = (
@@ -46,49 +51,53 @@ def write_arguments_annotations(
     tokenizer: PreTrainedTokenizerFast,
     modify_existing_documentation: bool = False,
     model_checkpoint: str = DEFAULT_MODEL_CHECKPOINT,
+    annotate_with_any: bool = False,
     use_streaming: bool = True,
 ):
-    model_and_args = _create_pydantic_model_and_get_nodes_args(
+    if use_streaming:
+        generation_function = _process_streaming_completion
+    else:
+        generation_function = _process_non_streaming_completion
+    # Create the Pydantic models and get the nodes and args
+    models_and_args = _create_pydantic_model_and_get_nodes_args(
         target_nodes_dict, modify_existing_documentation=modify_existing_documentation
     )
-    if model_and_args is None:
+    if models_and_args is None:
         # In this case, there are no arguments to annotate
         return
-    pydantic_model, all_nodes_with_args = model_and_args
-    user_prompt = str(USER_PROMPT).format(
-        code=code, json_schema=pydantic_model.model_json_schema()
-    )
-    model_checkpoint, max_tokens = get_model_checkpoint_max_tokens(
-        user_prompt=user_prompt,
-        tokenizer=tokenizer,
-        task="annotations",
-        model_checkpoint=model_checkpoint,
-    )
-    messages = list(MESSAGES_ARGUMENTS_ANNOTATION) + [
-        {"role": "user", "content": user_prompt}
-    ]
-    # Handle streaming or non-streaming based on user preference
-    if use_streaming:
-        yield from _process_streaming_completion(
-            client=client,
-            model_checkpoint=model_checkpoint,
-            messages=messages,
-            max_tokens=max_tokens,
-            pydantic_model=pydantic_model,
-            code=code,
-            all_nodes_with_args=all_nodes_with_args,
-            modify_existing_documentation=modify_existing_documentation,
+    pydantic_models, all_nodes_with_args = models_and_args
+
+    # Initialize tracking variables
+    mutable_vars = {
+        "code": code,
+        "prev_arg_lineno": 0,
+        "shift_inside_line": 0,
+        "lines_shift": 0,
+    }
+
+    for pydantic_model in pydantic_models:
+        user_prompt = str(USER_PROMPT).format(
+            code=code, json_schema=pydantic_model.model_json_schema()
         )
-    else:
-        yield from _process_non_streaming_completion(
+        model_checkpoint, max_tokens = get_model_checkpoint_and_params(
+            user_prompt=user_prompt,
+            tokenizer=tokenizer,
+            task="annotations",
+            model_checkpoint=model_checkpoint,
+        )
+        messages = list(MESSAGES_ARGUMENTS_ANNOTATION) + [
+            {"role": "user", "content": user_prompt}
+        ]
+        yield from generation_function(
             client=client,
             model_checkpoint=model_checkpoint,
             messages=messages,
             max_tokens=max_tokens,
             pydantic_model=pydantic_model,
-            code=code,
             all_nodes_with_args=all_nodes_with_args,
             modify_existing_documentation=modify_existing_documentation,
+            mutable_vars=mutable_vars,
+            annotate_with_any=annotate_with_any,
         )
 
 
@@ -98,9 +107,10 @@ def _process_streaming_completion(
     messages: list,
     max_tokens: int,
     pydantic_model: BaseModel,
-    code: str,
     all_nodes_with_args: dict,
     modify_existing_documentation: bool,
+    mutable_vars: dict[str, int | str],
+    annotate_with_any: bool = False,
 ):
     """Process the completion request using streaming."""
     with client.beta.chat.completions.stream(
@@ -111,6 +121,10 @@ def _process_streaming_completion(
         response_format=pydantic_model,
         stream_options={"include_usage": True},
     ) as stream:
+        code = mutable_vars["code"]
+        prev_arg_lineno = mutable_vars["prev_arg_lineno"]
+        shift_inside_line = mutable_vars["shift_inside_line"]
+        lines_shift = mutable_vars["lines_shift"]
         output = ""
         output_length = 0
         boundary = 1
@@ -118,10 +132,6 @@ def _process_streaming_completion(
             x: set() for x in pydantic_model.model_json_schema()["$defs"].keys()
         }
         required_typing_imports = set()
-        prev_arg_lineno = 0
-        shift_inside_line = 0
-        # Line shift can happen when we replace an existing annotation which looks like `dict[\n   str: str\n]`
-        lines_shift = 0
         for i, chunk in enumerate(stream):
             if hasattr(chunk, "delta"):
                 output += chunk.delta
@@ -138,19 +148,23 @@ def _process_streaming_completion(
                             for key, value in node_annotations.items():
                                 if not key in finished_keys[node_name] and value:
                                     # If parts of the annotation belong to the `typing` package, add the imports
-                                    required_typing_imports = _potentially_add_typing_import(value=value, required_typing_imports=required_typing_imports)
+                                    required_typing_imports = _potentially_add_typing_import(
+                                        value=value,
+                                        required_typing_imports=required_typing_imports,
+                                    )
                                     # If the annotation is broken
                                     value = _maybe_fix_unclosed_annotation(
                                         value, client, model_checkpoint, max_tokens
                                     )
                                     # Update key value in the code
-                                    kwargs = dict(
+                                    update_annotation_kwargs = dict(
                                         arg_value=value,
                                         code=code,
                                         modify_existing_documentation=modify_existing_documentation,
                                         prev_arg_lineno=prev_arg_lineno,
                                         shift_inside_line=shift_inside_line,
                                         lines_shift=lines_shift,
+                                        annotate_with_any=annotate_with_any,
                                     )
                                     # In this case this is an argument annotation
                                     arg_data = all_nodes_with_args[node_name][1][key][0]
@@ -168,20 +182,25 @@ def _process_streaming_completion(
                                             lines_shift,
                                         ) = _update_argument_annotation_in_code(
                                             arg_data=arg_data,
-                                            **kwargs,
+                                            **update_annotation_kwargs,
                                         )
                                         yield code
                                     else:
                                         code, lines_shift = (
                                             _update_returns_annotation_in_code(
                                                 func=all_nodes_with_args[node_name][0],
-                                                **kwargs,
+                                                **update_annotation_kwargs,
                                             )
                                         )
                                         yield code
                                     finished_keys[node_name].add(key)
                 boundary = output_length
         response_data = extract_llm_response_data(chunk)
+        # Update the mutable variables
+        mutable_vars["code"] = code
+        mutable_vars["prev_arg_lineno"] = prev_arg_lineno
+        mutable_vars["shift_inside_line"] = shift_inside_line
+        mutable_vars["lines_shift"] = lines_shift
         yield code, required_typing_imports, response_data
 
 
@@ -191,9 +210,10 @@ def _process_non_streaming_completion(
     messages: list,
     max_tokens: int,
     pydantic_model: BaseModel,
-    code: str,
     all_nodes_with_args: dict,
     modify_existing_documentation: bool,
+    mutable_vars: dict[str, int | str],
+    annotate_with_any: bool = False,
 ):
     """
     Process the completion request without streaming.
@@ -206,6 +226,12 @@ def _process_non_streaming_completion(
 
     api_key = os.getenv("ANTHROPIC_API_KEY", client.api_key)
     client_anthropic = instructor.from_anthropic(client=Anthropic(api_key=api_key))
+
+    code = mutable_vars["code"]
+    prev_arg_lineno = mutable_vars["prev_arg_lineno"]
+    shift_inside_line = mutable_vars["shift_inside_line"]
+    lines_shift = mutable_vars["lines_shift"]
+
     response = client_anthropic.messages.create(
         model=model_checkpoint,
         messages=messages,
@@ -214,69 +240,75 @@ def _process_non_streaming_completion(
         response_model=pydantic_model,
     )
     annotations_data = response.dict()
-    
+
     if not annotations_data:
         # If we couldn't parse the JSON, yield the original code
         yield code
         return
-    
+
     required_typing_imports = set()
-    prev_arg_lineno = 0
-    shift_inside_line = 0
-    lines_shift = 0
-    
+
     # For each node in the response
     for node_name, node_annotations in annotations_data.items():
         if node_name not in all_nodes_with_args:
             continue
-            
+
         for key, value in node_annotations.items():
             if not value:
                 continue
-                
+
             # If parts of the annotation belong to the `typing` package, add the imports
-            required_typing_imports = _potentially_add_typing_import(value=value, required_typing_imports=required_typing_imports)
-                
+            required_typing_imports = _potentially_add_typing_import(
+                value=value, required_typing_imports=required_typing_imports
+            )
+
             # If the annotation is broken
             value = _maybe_fix_unclosed_annotation(
                 value, client, model_checkpoint, max_tokens
             )
-            
+
             # Update key value in the code
-            kwargs = dict(
+            update_annotation_kwargs = dict(
                 arg_value=value,
                 code=code,
                 modify_existing_documentation=modify_existing_documentation,
                 prev_arg_lineno=prev_arg_lineno,
                 shift_inside_line=shift_inside_line,
                 lines_shift=lines_shift,
+                annotate_with_any=annotate_with_any,
             )
-            
+
             # Get the argument data
             arg_data = all_nodes_with_args[node_name][1][key][0]
-            
+
             # Update the appropriate annotation in the code
             if not (
                 arg_data is None
                 or isinstance(arg_data, POSSIBLE_RETURNS_ANNOTATION_TYPES)
             ):
                 # Update argument annotation
-                code, prev_arg_lineno, shift_inside_line, lines_shift = _update_argument_annotation_in_code(
-                    arg_data=arg_data, **kwargs
+                code, prev_arg_lineno, shift_inside_line, lines_shift = (
+                    _update_argument_annotation_in_code(
+                        arg_data=arg_data, **update_annotation_kwargs
+                    )
                 )
             else:
                 # Update returns annotation
                 code, lines_shift = _update_returns_annotation_in_code(
-                    func=all_nodes_with_args[node_name][0], **kwargs
+                    func=all_nodes_with_args[node_name][0], **update_annotation_kwargs
                 )
-                
+
     # Final yield with the updated code and required imports
-    response_data = {
-        "model": model_checkpoint,
-        "output": response.model_dump_json()
-    }
+    response_data = {"model": model_checkpoint, "output": response.model_dump_json()}
     # Current work-around to handle Anthropic limits
-    import time; time.sleep(60)
+    import time
+
+    time.sleep(60)
+    # Update the mutable variables
+    mutable_vars["code"] = code
+    mutable_vars["prev_arg_lineno"] = prev_arg_lineno
+    mutable_vars["shift_inside_line"] = shift_inside_line
+    mutable_vars["lines_shift"] = lines_shift
     yield code, required_typing_imports, response_data
 
 
@@ -288,7 +320,22 @@ def _update_argument_annotation_in_code(
     shift_inside_line: int = 0,
     lines_shift: int = 0,
     modify_existing_documentation: bool = False,
+    annotate_with_any: bool = False,
 ) -> tuple[str, int, int, int]:
+    # If the argument is `self`, we don't need to annotate it
+    arg_name = (
+        arg_data.arg
+        if isinstance(arg_data, ast.arg)
+        else (
+            arg_data.target.id
+            if isinstance(arg_data, ast.AnnAssign)
+            else arg_data.targets[0].id
+        )
+    )
+    if arg_name == "self":
+        return code, prev_arg_lineno, shift_inside_line, lines_shift
+    elif arg_value == "Any" and not annotate_with_any:
+        return code, prev_arg_lineno, shift_inside_line, lines_shift
     lineno = arg_data.lineno
     lines = code.splitlines()
     if isinstance(arg_data, ast.Assign) or arg_data.annotation is None:
@@ -337,7 +384,11 @@ def _update_returns_annotation_in_code(
     prev_arg_lineno: int = 0,
     shift_inside_line: int = 0,
     lines_shift: int = 0,
+    annotate_with_any: bool = False,
 ) -> tuple[str, int]:
+    if arg_value == "Any" and not annotate_with_any:
+        return code, lines_shift
+
     if func.returns is None:
         docstring_position = get_docstring_position_for_node_with_no_docstring(
             node=func,
@@ -386,7 +437,7 @@ def _update_returns_annotation_in_code(
                 + arg_value
                 + code[end_position:].strip()
             )
-        lines_shift -= len(code.splitlines()) - len(new_code.splitlines())
+        lines_shift -= len(code.strip().splitlines()) - len(new_code.splitlines())
         code = new_code
     return code, lines_shift
 
@@ -486,6 +537,7 @@ def _create_pydantic_model_and_get_args_for_node(
             ] += f". Current annotation: `{returns_annotation}`"
         return_kwargs["description"] += "."
         node_args[returns_argument_name] = (node.returns, returns_annotation)
+    args_data, node_args = _fix_unavailable_arg_names(args_data, node_args)
 
     model = create_model(
         model_name,
@@ -500,9 +552,10 @@ def _create_pydantic_model_and_get_nodes_args(
         str, tuple[Union[ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef], str]
     ],
     modify_existing_documentation: bool = False,
-) -> (
+    max_num_nodes_per_model: int = ANNOTATION_MAX_NUM_NODES_PER_MODEL,
+) -> Optional[
     tuple[
-        type[BaseModel],
+        list[type[BaseModel]],
         dict[
             str,
             tuple[
@@ -518,9 +571,8 @@ def _create_pydantic_model_and_get_nodes_args(
             ],
         ],
     ]
-    | None
-):
-    models = []
+]:
+    node_models = []
     all_nodes_and_args = {}
     for node_name, (node, node_type) in target_nodes_dict.items():
         model_and_args = _create_pydantic_model_and_get_args_for_node(
@@ -532,13 +584,22 @@ def _create_pydantic_model_and_get_nodes_args(
         if model_and_args is not None:
             node_model, node_args = model_and_args
             all_nodes_and_args[node_model.__name__] = (node, node_args)
-            models.append(node_model)
-    if len(models) == 0:
+            node_models.append(node_model)
+    if (num_nodes := len(node_models)) == 0:
         return
-    fields = {model.__name__: (model, ...) for model in models}
-    pydantic_model = create_model("ArgumentsModel", **fields)
-
-    return pydantic_model, all_nodes_and_args
+    elif num_nodes <= max_num_nodes_per_model:
+        fields = {model.__name__: (model, ...) for model in node_models}
+        pydantic_model = create_model("ArgumentsModel", **fields)
+        # Return a list for type consistency
+        return [pydantic_model], all_nodes_and_args
+    # Otherwise, we need to create several models
+    pydantic_models = []
+    for i in range(0, num_nodes, max_num_nodes_per_model):
+        batch = node_models[i : i + max_num_nodes_per_model]
+        batch_fields = {model.__name__: (model, ...) for model in batch}
+        pydantic_model = create_model(f"ArgumentsModel", **batch_fields)
+        pydantic_models.append(pydantic_model)
+    return pydantic_models, all_nodes_and_args
 
 
 def _arguments_without_annotation_exist(func_args_data: list[ast.arg]) -> bool:
@@ -621,7 +682,9 @@ def _get_function_or_method_args_data(
     return node_args
 
 
-def _potentially_add_typing_import(value: str, required_typing_imports: set[str]) -> set[str]:
+def _potentially_add_typing_import(
+    value: str, required_typing_imports: set[str]
+) -> set[str]:
     # e.g. value = Any
     if value in TYPING_CLASSES:
         required_typing_imports.add(value)
@@ -655,3 +718,13 @@ def _maybe_fix_unclosed_annotation(
 
 class PythonAnnotationFixModel(BaseModel):
     fixed_annotation: str = Field(description="Fixed annotation of the argument.")
+
+
+def _fix_unavailable_arg_names(args_data: dict, node_args: dict) -> tuple[dict, dict]:
+    arg_names = tuple(node_args.keys())
+    for arg_name in arg_names:
+        if arg_name in FORBIDDEN_ARG_NAMES_IN_ANNOTATION:
+            fixed_arg_name = "arg_" + arg_name
+            args_data[fixed_arg_name] = args_data.pop(arg_name)
+            node_args[fixed_arg_name] = node_args.pop(arg_name)
+    return args_data, node_args

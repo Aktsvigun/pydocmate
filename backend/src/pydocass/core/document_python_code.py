@@ -25,6 +25,7 @@ from ..utils.constants import DEFAULT_MODEL_CHECKPOINT
 
 log = logging.getLogger(__name__)
 
+
 def document_python_code(
     code: str,
     client: Client,
@@ -33,6 +34,7 @@ def document_python_code(
     do_write_docstrings: bool = True,
     do_write_comments: bool = True,
     use_streaming: bool = True,
+    annotate_with_any: bool = False,
     model_checkpoint: str = DEFAULT_MODEL_CHECKPOINT,
     tokenizer: PreTrainedTokenizerFast | None = None,
     in_time: datetime | None = None,
@@ -71,6 +73,7 @@ def document_python_code(
             modify_existing_documentation=modify_existing_documentation,
             model_checkpoint=model_checkpoint,
             use_streaming=use_streaming,
+            annotate_with_any=annotate_with_any,
         ):
             if isinstance(output, str):
                 yield output
@@ -89,9 +92,7 @@ def document_python_code(
             # this throughout the code
             tree = ast.parse(code)
             # Get dictionary with target nodes with the updated AST code
-            target_nodes_dict = get_nodes_dict_with_functions_classes_methods(
-                tree.body
-            )
+            target_nodes_dict = get_nodes_dict_with_functions_classes_methods(tree.body)
 
     if do_write_docstrings:
         # Add docstrings to functions, classes, and methods

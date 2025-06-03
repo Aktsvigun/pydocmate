@@ -12,7 +12,7 @@ from openai.lib.streaming.chat._events import ChunkEvent
 
 from .constants import (
     NUM_SYSTEM_PROMPT_TOKENS_DICT,
-    MAX_MAX_TOTAL_TOKENS,
+    MAX_MAX_TOKENS,
     MAX_TOTAL_TOKENS,
     DEFAULT_MAX_TOKENS_DICT,
     DEFAULT_MODEL_CHECKPOINT,
@@ -99,7 +99,7 @@ def check_no_duplicating_methods(nodes: list[ast.AST]):
                 )
 
 
-def get_model_checkpoint_max_tokens(
+def get_model_checkpoint_and_params(
     user_prompt: str,
     tokenizer: PreTrainedTokenizerFast,
     task: Literal["annotations", "docstrings", "comments"],
@@ -111,9 +111,12 @@ def get_model_checkpoint_max_tokens(
     max_tokens = MAX_TOTAL_TOKENS - num_user_prompt_tokens - num_system_prompt_tokens
     if max_tokens < min_max_tokens:
         warnings.warn(
-            "The input is too large. Consider splitting it into several parts. The context will be dillated to fit into the model, which can lead to quality degradation."
+            f"The input is too large for the task '{task}'. Consider splitting the input into several parts for optimal quality."
         )
-        model_checkpoint = model_checkpoint or LONG_CONTEXT_MODEL_CHECKPOINT
+        if (model_checkpoint is None) or (
+            _get_model_max_tokens(model_checkpoint) <= MAX_TOTAL_TOKENS
+        ):
+            model_checkpoint = LONG_CONTEXT_MODEL_CHECKPOINT
         use_extended_prompt = False
         max_tokens = MAX_TOKENS_FOR_LONG_CONTEXT
     elif (
@@ -124,7 +127,7 @@ def get_model_checkpoint_max_tokens(
         use_extended_prompt = False
         model_checkpoint = model_checkpoint or DEFAULT_MODEL_CHECKPOINT
     else:
-        max_tokens = min(max_tokens, MAX_MAX_TOTAL_TOKENS)
+        max_tokens = min(max_tokens, MAX_MAX_TOKENS)
         use_extended_prompt = True
         model_checkpoint = model_checkpoint or DEFAULT_MODEL_CHECKPOINT
         if task == "docstrings":
@@ -150,7 +153,9 @@ def extract_llm_response_data(chunk: ChunkEvent):
 def load_tokenizer(model_checkpoint: str) -> PreTrainedTokenizerFast:
     cache_dir = os.getenv("HF_HOME", None)
     try:
-        return AutoTokenizer.from_pretrained(model_checkpoint, cache_dir=cache_dir, use_fast=True)
+        return AutoTokenizer.from_pretrained(
+            model_checkpoint, cache_dir=cache_dir, use_fast=True
+        )
     except:
         return AutoTokenizer.from_pretrained(
             DEFAULT_TOKENIZER_CHECKPOINT, cache_dir=cache_dir, use_fast=True
@@ -180,3 +185,9 @@ def get_client(data: dict[str, Any]):
         )
 
     return Client(api_key=api_key, base_url=BASE_URL)
+
+
+def _get_model_max_tokens(model_checkpoint: str) -> int:
+    if "qwen3" in model_checkpoint.lower():
+        return 40_000
+    return 128_000

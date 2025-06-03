@@ -1,1 +1,1 @@
-"""Scripts for pydocass package.""" 
+"""Scripts for pydocass package."""
