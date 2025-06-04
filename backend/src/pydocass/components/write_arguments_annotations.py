@@ -673,7 +673,7 @@ def _get_function_or_method_args_data(
     if is_method:
         # Check it is a `staticmethod`
         if len(decorator_list := node.decorator_list) and any(
-            decorator.id == "staticmethod" for decorator in decorator_list
+            ast.unparse(decorator) == "staticmethod" for decorator in decorator_list
         ):
             return node_args
         # Otherwise, remove the first argument since it is `self` (even if it is named differently)
@@ -725,6 +725,7 @@ def _fix_unavailable_arg_names(args_data: dict, node_args: dict) -> tuple[dict, 
     for arg_name in arg_names:
         if arg_name in FORBIDDEN_ARG_NAMES_IN_ANNOTATION:
             fixed_arg_name = "arg_" + arg_name
-            args_data[fixed_arg_name] = args_data.pop(arg_name)
+            # Using `, None` when `args_data` is empty - e.g. if `modify_existing_documentation` is `False` and all annotations are already present in the code.
+            args_data[fixed_arg_name] = args_data.pop(arg_name, None)
             node_args[fixed_arg_name] = node_args.pop(arg_name)
     return args_data, node_args
