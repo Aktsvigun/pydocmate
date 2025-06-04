@@ -21,6 +21,7 @@ def document_file(
     do_write_comments: bool = True,
     use_streaming: bool = False,
     annotate_with_any: bool = False,
+    do_align_argument_defaults: bool = False,
     do_black_format: bool = True,
     model_checkpoint: str | None = None,
     api_key: str | None = None,
@@ -39,6 +40,7 @@ def document_file(
         do_write_comments: Whether to write comments.
         use_streaming: Whether to use streaming for the documentation process.
         annotate_with_any: Whether to annotate with any.
+        do_align_argument_defaults: Whether to align argument defaults.
         do_black_format: Whether to format the code with Black.
         model_checkpoint: Model checkpoint to use. If None, uses the default.
         api_key: API key for Nebius AI Studio or OpenAI. If None, uses environment variables.
@@ -86,6 +88,7 @@ def document_file(
             do_write_comments=do_write_comments,
             use_streaming=use_streaming,
             annotate_with_any=annotate_with_any,
+            do_align_argument_defaults=do_align_argument_defaults,
             in_time=in_time,
             model_checkpoint=model_checkpoint,
         ):
@@ -184,6 +187,12 @@ def main():
     )
 
     parser.add_argument(
+        "--align-argument-defaults",
+        action="store_true",
+        dest="do_align_argument_defaults",
+        help="Align argument defaults.",
+    )
+    parser.add_argument(
         "--no-black-format",
         action="store_false",
         dest="do_black_format",
@@ -230,6 +239,7 @@ def main():
             do_write_comments=args.do_write_comments,
             use_streaming=args.use_streaming,
             annotate_with_any=args.annotate_with_any,
+            do_align_argument_defaults=args.do_align_argument_defaults,
             do_black_format=args.do_black_format,
             model_checkpoint=args.model_checkpoint,
             api_key=args.api_key,
