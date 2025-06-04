@@ -21,6 +21,7 @@ def document_file(
     do_write_comments: bool = True,
     use_streaming: bool = False,
     annotate_with_any: bool = False,
+    do_black_format: bool = True,
     model_checkpoint: str | None = None,
     api_key: str | None = None,
     verbose: bool = False,
@@ -38,6 +39,7 @@ def document_file(
         do_write_comments: Whether to write comments.
         use_streaming: Whether to use streaming for the documentation process.
         annotate_with_any: Whether to annotate with any.
+        do_black_format: Whether to format the code with Black.
         model_checkpoint: Model checkpoint to use. If None, uses the default.
         api_key: API key for Nebius AI Studio or OpenAI. If None, uses environment variables.
         verbose: Whether to show progress updates during the documentation process.
@@ -95,7 +97,8 @@ def document_file(
             print("\nFormatting code with Black...", file=sys.stderr)
 
         # Format the final code with Black
-        documented_code = format_code_with_black(documented_code)
+        if do_black_format:
+            documented_code = format_code_with_black(documented_code)
 
         # Output the documented code if output_file is specified
         if len(documented_code) > 0 and output_file:
@@ -181,6 +184,13 @@ def main():
     )
 
     parser.add_argument(
+        "--no-black-format",
+        action="store_false",
+        dest="do_black_format",
+        help="Don't format the code with Black.",
+    )
+
+    parser.add_argument(
         "-m",
         "--model",
         default=None,
@@ -220,6 +230,7 @@ def main():
             do_write_comments=args.do_write_comments,
             use_streaming=args.use_streaming,
             annotate_with_any=args.annotate_with_any,
+            do_black_format=args.do_black_format,
             model_checkpoint=args.model_checkpoint,
             api_key=args.api_key,
             verbose=args.verbose,

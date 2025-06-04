@@ -1,12 +1,10 @@
-# Import the `ast` module for abstract syntax tree parsing
 import ast
 import logging
 from datetime import datetime
-
-# Imports solely for annotation
-from openai import Client
 from typing import Generator
 
+
+from openai import Client
 from transformers import PreTrainedTokenizerFast
 
 from ..components import (
@@ -21,7 +19,10 @@ from ..utils.utils import (
     check_no_duplicating_methods,
     load_tokenizer,
 )
+from ..utils.indentation import detect_indentation, align_indentation
+from ..utils.align_argument_defaults import align_argument_defaults
 from ..utils.constants import DEFAULT_MODEL_CHECKPOINT
+
 
 log = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ def document_python_code(
     do_write_comments: bool = True,
     use_streaming: bool = True,
     annotate_with_any: bool = False,
+    do_align_argument_defaults: bool = False,
     model_checkpoint: str = DEFAULT_MODEL_CHECKPOINT,
     tokenizer: PreTrainedTokenizerFast | None = None,
     in_time: datetime | None = None,
@@ -46,6 +48,8 @@ def document_python_code(
     code = rf"{code}"
     # Make copy of the initial code
     in_code = str(code)
+    # Get current indentation. It will be one of ["2-space", "4-space", "tab", "inconsistent"]
+    indent_type = detect_indentation(code)
     # Parse the code into an AST
     tree = ast.parse(code)
 
@@ -86,8 +90,9 @@ def document_python_code(
             for typing_class in required_typing_imports:
                 code = maybe_add_class_to_typing_import(code, typing_class)
                 yield code
-            # Replace spaces with tabs for consistent formatting
-            code = code.replace(" " * 4, "\t")
+            code = align_indentation(code=code, indent_type=indent_type)
+            if do_align_argument_defaults:
+                code = align_argument_defaults(code=code)
             # Lines may have changed, so it's easier to rerun `ast.parse` which takes < 1ms than track
             # this throughout the code
             tree = ast.parse(code)
@@ -109,6 +114,7 @@ def document_python_code(
                 yield output
         if output is not None:
             code, docstrings_response_data = output
+        code = align_indentation(code=code, indent_type=indent_type)
 
     if do_write_comments:
         # Add comments to the code where necessary
@@ -123,8 +129,7 @@ def document_python_code(
             if isinstance(output, str):
                 yield output
         code, comments_response_data = output
-    # Replace spaces with tabs for consistent formatting
-    code = code.replace(" " * 4, "\t")
+    code = align_indentation(code=code, indent_type=indent_type)
     # Make sure the generated code has valid Python syntax
     ast.parse(code)
     # Save to database
