@@ -2,6 +2,8 @@ import ast
 import re
 import typing
 from typing import Union, Optional
+import json
+
 from openai import Client
 from pydantic import create_model, Field, BaseModel
 from transformers import PreTrainedTokenizerFast
@@ -83,6 +85,7 @@ def write_arguments_annotations(
         model_checkpoint, max_tokens = get_model_checkpoint_and_params(
             user_prompt=user_prompt,
             tokenizer=tokenizer,
+            pydantic_model=pydantic_model,
             task="annotations",
             model_checkpoint=model_checkpoint,
         )
@@ -118,6 +121,7 @@ def _process_streaming_completion(
         model=model_checkpoint,
         messages=messages,
         top_p=DEFAULT_TOP_P_ANNOTATIONS,
+        temperature=0.7,
         max_tokens=max_tokens,
         response_format=pydantic_model,
         stream_options={"include_usage": True},
@@ -707,13 +711,15 @@ def _maybe_fix_unclosed_annotation(
     if value.count("[") != value.count("]") or value.count("(") != value.count(")"):
         print("Fixing unclosed annotation. Current annotation:\n" + value)
         messages = list(MESSAGES_FIX_ANNOTATION) + [{"role": "user", "content": value}]
-        return client.beta.chat.completions.parse(
+        resp = client.beta.chat.completions.parse(
             model=model_checkpoint,
             messages=messages,
             top_p=0.5,
             max_tokens=max_tokens,
             response_format=PythonAnnotationFixModel,
         )
+        value = resp.choices[0].message.content
+        value = json.dumps(json.loads(value))
     return value
 
 

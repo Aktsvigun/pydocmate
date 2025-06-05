@@ -41,6 +41,7 @@ def write_comments(
     model_checkpoint, max_tokens = get_model_checkpoint_and_params(
         user_prompt=user_prompt,
         tokenizer=tokenizer,
+        pydantic_model=pydantic_model,
         task="comments",
         model_checkpoint=model_checkpoint,
     )
@@ -91,6 +92,7 @@ def _process_streaming_comments(
         model=model_checkpoint,
         messages=messages,
         top_p=DEFAULT_TOP_P_COMMENTS,
+        temperature=0.7,
         max_tokens=max_tokens,
         response_format=pydantic_model,
         stream_options={"include_usage": True},

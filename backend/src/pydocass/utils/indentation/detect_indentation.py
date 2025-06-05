@@ -55,19 +55,16 @@ def detect_indentation(code: str ) -> Literal["2-space", "4-space", "tab", "inco
                else:
                    has_other_space = True
    
-   # Determine the result
-   indent_types = sum([has_2_space, has_4_space, has_tab, has_other_space])
-   
-   if indent_types == 0:
-       # No indentation found
-       return DEFAULT_INDENTATION_TYPE
-   elif indent_types > 1:
+   if (has_4_space or has_2_space) and has_tab:
        return INDENTATION_INCONSISTENT
-   elif has_tab:
-       return INDENTATION_TAB
    elif has_4_space:
        return INDENTATION_4_SPACE
    elif has_2_space:
        return INDENTATION_2_SPACE
-   else:
+   elif has_tab:
+       return INDENTATION_TAB
+   elif has_other_space:
        return INDENTATION_INCONSISTENT
+   else:
+       # No indentation found
+       return DEFAULT_INDENTATION_TYPE

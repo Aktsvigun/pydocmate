@@ -4,6 +4,7 @@ import json
 import os
 from typing import Union, Literal, Any
 from transformers import PreTrainedTokenizerFast, AutoTokenizer
+from pydantic import BaseModel
 import warnings
 import black
 
@@ -102,13 +103,15 @@ def check_no_duplicating_methods(nodes: list[ast.AST]):
 def get_model_checkpoint_and_params(
     user_prompt: str,
     tokenizer: PreTrainedTokenizerFast,
+    pydantic_model: type[BaseModel],
     task: Literal["annotations", "docstrings", "comments"],
     model_checkpoint: str | None = None,
 ):
-    num_user_prompt_tokens = len(tokenizer.tokenize(user_prompt))
+    num_user_prompt_tokens = len(tokenizer.tokenize(user_prompt + str(pydantic_model.model_json_schema())))
     num_system_prompt_tokens = NUM_SYSTEM_PROMPT_TOKENS_DICT[task]
     min_max_tokens = DEFAULT_MAX_TOKENS_DICT[task]
-    max_tokens = MAX_TOTAL_TOKENS - num_user_prompt_tokens - num_system_prompt_tokens
+    # -20 comes from additional tokens for messages formatting
+    max_tokens = MAX_TOTAL_TOKENS - num_user_prompt_tokens - num_system_prompt_tokens - 20
     if max_tokens < min_max_tokens:
         warnings.warn(
             f"The input is too large for the task '{task}'. Consider splitting the input into several parts for optimal quality."
