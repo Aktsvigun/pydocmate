@@ -7,6 +7,7 @@ export interface CodeBody {
   doWriteArgumentsAnnotations: boolean;
   doWriteDocstrings: boolean;
   doWriteComments: boolean;
+  annotateWithAny: boolean;
   apiKey: string;
 }
 

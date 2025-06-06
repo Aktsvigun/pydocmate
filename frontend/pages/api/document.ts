@@ -12,6 +12,7 @@ const handler = async (req: Request): Promise<Response> => {
       doWriteArgumentsAnnotations,
       doWriteDocstrings,
       doWriteComments,
+      annotateWithAny,
       // apiKey
     } =
       (await req.json()) as CodeBody;
@@ -35,6 +36,7 @@ const handler = async (req: Request): Promise<Response> => {
         do_write_arguments_annotations: doWriteArgumentsAnnotations,
         do_write_docstrings: doWriteDocstrings,
         do_write_comments: doWriteComments,
+        annotate_with_any: annotateWithAny,
         // api_key: apiKey
       }),
     });

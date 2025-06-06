@@ -25,6 +25,7 @@ export default function Home() {
   const [doWriteArgumentsAnnotations, setDoWriteArgumentsAnnotations] = useState<boolean>(true);
   const [doWriteDocstrings, setDoWriteDocstrings] = useState<boolean>(true);
   const [doWriteComments, setDoWriteComments] = useState<boolean>(true);
+  const [annotateWithAny, setAnnotateWithAny] = useState<boolean>(false);
 
   // General state
   const [loading, setLoading] = useState<boolean>(false);
@@ -67,6 +68,7 @@ export default function Home() {
         doWriteArgumentsAnnotations,
         doWriteDocstrings,
         doWriteComments,
+        annotateWithAny,
         apiKey, // not explicitly needed by your local server, but included in the type
       };
 
@@ -170,6 +172,13 @@ export default function Home() {
               className={styles.nebiusSwitch}
             >
               Write comments
+            </Switch>
+            <Switch
+              checked={annotateWithAny}
+              onChange={(e) => setAnnotateWithAny(e.target.checked)}
+              className={styles.nebiusSwitch}
+            >
+              Annotate with any
             </Switch>
           </div>
 
