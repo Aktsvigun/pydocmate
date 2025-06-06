@@ -100,6 +100,7 @@ def document_python_code(
             target_nodes_dict = get_nodes_dict_with_functions_classes_methods(tree.body)
 
     if do_write_docstrings:
+        output = None
         # Add docstrings to functions, classes, and methods
         for output in write_docstrings(
             target_nodes_dict=target_nodes_dict,

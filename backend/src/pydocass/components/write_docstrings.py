@@ -95,6 +95,7 @@ def _process_streaming_docstrings(
         model=model_checkpoint,
         messages=messages,
         top_p=DEFAULT_TOP_P_DOCSTRINGS,
+        temperature=0.7,
         max_tokens=max_tokens,
         response_format=pydantic_model,
         stream_options={"include_usage": True},
